@@ -12,6 +12,8 @@ from ctrl_get_screen          import GetScreenWidget
 class ControlWidget(pya.QWidget):
     def __init__(self, parent = None):
         super(ControlWidget, self).__init__()
+        self.mw         = pya.Application.instance().main_window()
+        self.cv         = self.mw.current_view()
         self.waitUpdate = False
         self.installEventFilter(self)
         self.initUI()
@@ -19,7 +21,12 @@ class ControlWidget(pya.QWidget):
         self.initSignal()
         self.initVal()
         self.getScreen()
+
+    def check_cv(self):
+        self.cv = self.mw.current_view()
+        return self.cv
         
+
     def initUI(self):
         self.disp     = LayerScreenShot(control = self)
         self.saveW    = SaveFileWidget()
@@ -40,17 +47,17 @@ class ControlWidget(pya.QWidget):
         self.setWindowTitle("Screenshot Control")
 
     def initTheme(self):
-        cv = pya.Application.instance().main_window().current_view()
-        bgc        = cv.get_config("background-color") if cv else "#FFFFFF"
-        bgc        = "#FFFFFF" if bgc == "auto" else bgc
-        dark_bg    = (int(bgc[1:3], 16) + int(bgc[3:5], 16) + int(bgc[5:7], 16)) <= (255)
-        txtc       = "#FFFFFF" if dark_bg else "#000000"
-        styleSheet = f"""
-            QWidget{{    background-color : {bgc};}}
-            QListWidget{{background-color : {bgc}; border-style : solid; border : None;}}
-            QLabel{{color: {txtc};}}
-        """
-        self.disp.setStyleSheet(styleSheet)
+        if self.check_cv():
+            bgc        = self.cv.get_config("background-color") if self.cv else "#FFFFFF"
+            bgc        = "#FFFFFF" if bgc == "auto" else bgc
+            dark_bg    = (int(bgc[1:3], 16) + int(bgc[3:5], 16) + int(bgc[5:7], 16)) <= (255)
+            txtc       = "#FFFFFF" if dark_bg else "#000000"
+            styleSheet = f"""
+                QWidget{{    background-color : {bgc};}}
+                QListWidget{{background-color : {bgc}; border-style : solid; border : None;}}
+                QLabel{{color: {txtc};}}
+            """
+            self.disp.setStyleSheet(styleSheet)
         
     def initVal(self):
         loaded = self.loadSettings()    
@@ -66,6 +73,7 @@ class ControlWidget(pya.QWidget):
                 cb.setCheckState(pya.Qt.Checked)
         
     def initSignal(self):
+        
         
         dispCfg = self.dispW.dispCfg
         imgCfg  = self.dispW.imgCfg
@@ -91,8 +99,7 @@ class ControlWidget(pya.QWidget):
         dispCfg.axisCB.currentIndexChanged.connect( lambda i : self.getScreen())
         
     def getScreen(self):
-        cv = pya.Application.instance().main_window().current_view()
-        if not(cv) : return
+        if not(self.check_cv()) : return
         
         dispCfg  = self.dispW.dispCfg
         imgCfg   = self.dispW.imgCfg
@@ -106,7 +113,7 @@ class ControlWidget(pya.QWidget):
         }
         
         for s in settings:
-            cv.set_config(s, settings[s])
+            self.cv.set_config(s, settings[s])
 
         self.disp.getScreen(
             w = imgCfg.imgWSpn.value, 
@@ -114,7 +121,7 @@ class ControlWidget(pya.QWidget):
         )
         
         self.getLayerLabels()
-        cv.clear_config()
+        self.cv.clear_config()
         
     def getLayerLabels(self):
         dispCfg  = self.dispW.dispCfg
@@ -126,9 +133,8 @@ class ControlWidget(pya.QWidget):
         )
         
     def getViewBox(self):
-        cv = pya.Application.instance().main_window().current_view()
-        if not(cv) : return
-        b       = cv.box()
+        if not(self.check_cv()) : return
+        b       = self.cv.box()
         viewCfg = self.viewW.viewCfg
         viewCfg.vp1xDblSpn.value = b.p1.x
         viewCfg.vp1yDblSpn.value = b.p1.y
@@ -137,8 +143,7 @@ class ControlWidget(pya.QWidget):
 
     
     def setView(self):
-        cv = pya.Application.instance().main_window().current_view()
-        if not(cv) : return
+        if not(self.check_cv()) : return
         
         viewCfg = self.viewW.viewCfg
         b       = pya.DBox(
@@ -147,13 +152,12 @@ class ControlWidget(pya.QWidget):
             viewCfg.vp2xDblSpn.value,
             viewCfg.vp2yDblSpn.value,
         )
-        cv.zoom_box(b)
+        self.cv.zoom_box(b)
         self.getScreen()
         
     def zoomFit(self):
-        cv = pya.Application.instance().main_window().current_view()
-        if not(cv) : return
-        cv.zoom_fit()
+        if not(self.check_cv()) : return
+        self.cv.zoom_fit()
         self.getScreen()
     
     def bkView(self):
@@ -173,8 +177,7 @@ class ControlWidget(pya.QWidget):
         viewBMK = self.viewW.viewBMK
         bmk     = viewBMK.itemWidget(item).value()
         
-        cv = pya.Application.instance().main_window().current_view()
-        if not(cv) : return
+        if not(self.check_cv()) : return
 
         viewCfg = self.viewW.viewCfg
         viewCfg.vp1xDblSpn.value = bmk["x1"]
@@ -187,7 +190,7 @@ class ControlWidget(pya.QWidget):
             bmk["x2"],
             bmk["y2"],
         )
-        cv.zoom_box(b)
+        self.cv.zoom_box(b)
         self.getScreen()
         
     def enableLyChecks(self, n):
@@ -267,7 +270,7 @@ class ControlWidget(pya.QWidget):
         if event.type() == pya.QEvent.ActivationChange:
             self.getScreen()
             print("OK")
-    '''
+    
     def eventFilter(self, source, event):
        
         
@@ -284,7 +287,7 @@ class ControlWidget(pya.QWidget):
                 #self.disp.showNormal()
                 #self.disp.raise_()
             
-        '''
+        
         if event.type() in [pya.QEvent.WindowActivate, pya.QEvent.MouseButtonPress]:
             if self.waitUpdate:
                 self.getScreen()
@@ -292,9 +295,9 @@ class ControlWidget(pya.QWidget):
 
         elif event.type() in [pya.QEvent.Leave, pya.QEvent.WindowDeactivate]:
             self.waitUpdate = True
-        '''
+        
         event.accept()
-
+    '''
 if __name__ == "__main__" :
     wmain, hmain = 500, 500
     wctrl, hctrl = 300, 500
