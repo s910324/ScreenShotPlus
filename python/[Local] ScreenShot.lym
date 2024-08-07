@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <priority>0</priority>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text>import pya
+import os
+
+def view():
+    return pya.Application.instance().main_window().current_view()
+
+class ScreenShotWidget(pya.QWidget):
+    def __init__(self, parent = None):
+        super(ScreenShotWidget, self).__init__()  
+        self.l      = pya.QLabel()
+        self.layout = pya.QVBoxLayout()
+        self.layout.addWidget(self.l)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+        self.layout.addStretch()
+        self.setLayout(self.layout)
+        
+    def getScreen(self, width, height):
+        if view():
+            self.l.setPixmap(pya.QPixmap().fromImage(view().get_image(width, height))) 
+           
+class LayerLabel(pya.QWidget):
+    def __init__(self, label_png, label_string, parent = None):
+        super(LayerLabel, self).__init__(parent)  
+        self.layerPixmap = pya.QPixmap()
+        self.layerImage  = pya.QLabel()
+        self.layerLabel  = pya.QLabel(f"{label_string}")
+        self.layout      = pya.QHBoxLayout()
+        self.layerPixmap.loadFromData(label_png)
+        self.layerImage.setPixmap(self.layerPixmap)
+        self.layout.addSpacing(5)
+        self.layout.addWidget(self.layerImage)
+        self.layout.addWidget(self.layerLabel)
+        self.layout.setContentsMargins(0,0,0,0)
+        self.layout.setSpacing(5)
+        self.layout.addStretch()
+        self.setLayout(self.layout)
+        
+class LayerList(pya.QListWidget):
+    def __init__(self, parent = None):
+        super(LayerList, self).__init__()
+        #self.container = []
+        self.setFixedWidth(180)
+        
+    def addLayerItem(self, layer_iter, showLayerNo, showName, showSourceView):
+        layerProp = layer_iter.current()
+    
+        if layerProp.source_cellview &lt; 0:
+            showLayerNo    = False
+            showSourceView = False
+            
+        lp_lydt     = f"{layerProp.source_layer}/{layerProp.source_datatype}" if showLayerNo                      else None
+        lp_name     = f"{layerProp.name}"                                     if (layerProp.name  and showName )  else None
+        lp_source   = f"@{layerProp.source_cellview + 1}"                     if  showSourceView                  else None
+        label_text  = " - ".join([txt for txt in [lp_name, lp_lydt, lp_source] if txt])
+        label_png   = view().icon_for_layer(layer_iter, 25, 10, 1).to_png_data()
+        lwidget     = LayerLabel(label_png, label_text, self)
+        lItem       = pya.QListWidgetItem(self)
+        lItem.setSizeHint(lwidget.sizeHint())
+        #self.container.append(lwidget)
+        self.addItem(lItem)
+        self.setItemWidget(lItem, lwidget)
+    
+    def setTheme(self, bgc, txtc):
+        self.txtc = txtc
+        self.bgc  = bgc
+
+    def getLayerIcon(self, showLayerNo = True, showName = True, showSourceView = True, showOnlyVisible = True):
+        if view():
+            self.clear()
+            layer_iter = view().begin_layers()
+            while not(layer_iter.at_end()):
+                layerProp = layer_iter.current()  
+                if [showOnlyVisible, layerProp.visible] in [[True, True], [False, True], [False, False]] : 
+                    self.addLayerItem(layer_iter, showLayerNo, showName, showSourceView)
+                layer_iter.next()
+
+class LayerScreenShotWidget(pya.QWidget):
+    def __init__(self, parent = None):
+        super(LayerScreenShotWidget, self).__init__()  
+        self.layerList = LayerList()
+        self.ssWidget  = ScreenShotWidget()
+        self.layout    = pya.QHBoxLayout()
+        self.layout.addWidget(self.layerList)
+        self.layout.addWidget(self.ssWidget)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+        self.setLayout(self.layout)
+
+    def getScreen(self, width = 400, height = 400, showLayerNo = True, showName = True, showSourceView = True, showOnlyVisible = True):
+        self.ssWidget.getScreen(width, height)
+        self.layerList.getLayerIcon(showLayerNo, showName, showSourceView, showOnlyVisible)
+        
+
+    def saveScreen(self, path):
+        statusStr = "Invalid file path"
+        if os.path.exists(os.path.dirname(path)):
+            statusStr   = "File saved"
+            widgetImage = pya.QPixmap(self.size)
+            self.render(widgetImage)
+            widgetImage.save(path)
+        pya.QMessageBox.information(None, 'Status', f'{statusStr}\n{path}')
+        
+class HLine(pya.QFrame):
+    def __init__(self, parent = None):
+        super(HLine, self).__init__(None)
+        self.setFrameShape(pya.QFrame.HLine)
+        self.setFrameShadow(pya.QFrame.Sunken)
+
+class ControlWidget(pya.QWidget):
+    def __init__(self, parent = None):
+        super(ControlWidget, self).__init__()
+        self.waitClose = False
+        self.parent    = parent
+        self.initUI()
+        self.setPanelValue()
+        self.initSignal()
+          
+    def initUI(self):
+        self.layout                = pya.QGridLayout()
+        self.onTopCB               = pya.QCheckBox("Always on top")
+        self.pathLabel             = pya.QLabel("Path:")
+        self.imgWidthLabel         = pya.QLabel("Image width:")
+        self.imgHeightLabel        = pya.QLabel("Image height:")
+        self.lyWidthLabel          = pya.QLabel("Layer panel width:")
+        self.lyAdjLabel            = pya.QLabel("Layer view:")
+        self.viewLabelx1y1         = pya.QLabel("X1,Y1:")
+        self.viewLabelx2y2         = pya.QLabel("X2,Y2:")
+        self.viewLabelVR           = pya.QLabel("Set View Rect:")
+         
+        self.gridLabel             = pya.QLabel("Grid:")
+        self.scaleLabel            = pya.QLabel("Scale bar:")
+        self.axisLabel             = pya.QLabel("Axis:")   
+          
+        self.gridHide              = pya.QCheckBox("Hide grids")                                   
+        self.scaleHide             = pya.QCheckBox("Hide Ruler")
+        
+        self.showLypnCB            = pya.QCheckBox("Show layer panel")                                   
+        self.showLndtCB            = pya.QCheckBox("Show layer no")
+        self.showLnameCB           = pya.QCheckBox("Show layer name")
+        self.showLsourceCB         = pya.QCheckBox("Show layer source")
+        self.showLvisibleCB        = pya.QCheckBox("Show only visible")
+        
+        
+            
+        self.xDblSpin1             = pya.QDoubleSpinBox()
+        self.xDblSpin2             = pya.QDoubleSpinBox()
+        self.yDblSpin1             = pya.QDoubleSpinBox()
+        self.yDblSpin2             = pya.QDoubleSpinBox()
+
+        self.imgWidthSpin          = pya.QSpinBox()
+        self.imgHeightSpin         = pya.QSpinBox()
+        self.lyWidthSpin           = pya.QSpinBox()
+        
+        self.pathEdit              = pya.QLineEdit()
+        self.getViewPB             = pya.QPushButton("Get current view box")
+        self.setViewPB             = pya.QPushButton("Set view")
+        self.setFitPB              = pya.QPushButton("Zoom fit")
+        self.getScreenPB           = pya.QPushButton("Get image")
+        self.saveScreenPB          = pya.QPushButton("Save image")
+        self.cancelPB              = pya.QPushButton("Cancel")
+        
+        
+        self.imgWidthSpin.setMaximum(1e4)
+        self.imgHeightSpin.setMaximum(1e4)
+        self.lyWidthSpin.setMaximum(500)
+
+        self.xDblSpin1.setRange(-1e5, 1e5)
+        self.xDblSpin2.setRange(-1e5, 1e5)
+        self.yDblSpin1.setRange(-1e5, 1e5)
+        self.yDblSpin2.setRange(-1e5, 1e5)
+        
+
+        col = 2
+        g   = 0
+        
+        self.layout.addWidget(self.imgWidthLabel,  g + 0, 0, 1, 1  )
+        self.layout.addWidget(self.imgWidthSpin,   g + 0, 1, 1, col)
+        self.layout.addWidget(self.imgHeightLabel, g + 1, 0, 1, 1  )
+        self.layout.addWidget(self.imgHeightSpin,  g + 1, 1, 1, col)
+        self.layout.addWidget(self.lyWidthLabel,   g + 2, 0, 1, 1)
+        self.layout.addWidget(self.lyWidthSpin,    g + 2, 1, 1, col)
+        self.layout.addWidget(self.onTopCB,        g + 3, 1, 1, col)
+        
+        g = g + 3
+        
+        self.layout.setRowStretch(g, 1)
+        g = g + 1
+        
+        self.layout.addWidget(HLine(self),         g + 0, 0, 1, col + 1)
+        g = g + 1
+        self.layout.addWidget(self.lyAdjLabel,     g + 0, 0, 1, 1  )
+        self.layout.addWidget(self.showLypnCB,     g + 0, 1, 1, col)
+        self.layout.addWidget(self.showLndtCB,     g + 1, 1, 1, col)
+        self.layout.addWidget(self.showLnameCB,    g + 2, 1, 1, col)
+        self.layout.addWidget(self.showLsourceCB,  g + 3, 1, 1, col)
+        self.layout.addWidget(self.showLvisibleCB, g + 4, 1, 1, col)
+        g = g + 4
+        
+        self.layout.setRowStretch(g, 1)
+        g = g + 1
+        
+        self.layout.addWidget(HLine(self),         g + 0, 0, 1, col + 1)
+        g = g + 1
+        
+        self.layout.addWidget(self.gridLabel,      g + 0, 0, 1, col)
+        self.layout.addWidget(self.gridHide,       g + 0, 1, 1, col)
+        self.layout.addWidget(self.scaleLabel,     g + 1, 0, 1, col)
+        self.layout.addWidget(self.scaleHide,      g + 1, 1, 1, col)
+        g = g + 3
+        
+        self.layout.setRowStretch(g, 1)
+        g = g + 1
+        
+        self.layout.addWidget(HLine(self),         g + 0, 0, 1, col + 1)
+        g = g + 1
+        
+        self.layout.addWidget(self.viewLabelx1y1,  g + 0, 0, 1, 1  ) 
+        self.layout.addWidget(self.xDblSpin1,      g + 0, 1, 1, 1  )
+        self.layout.addWidget(self.yDblSpin1,      g + 0, 2, 1, 1  )
+        
+        self.layout.addWidget(self.viewLabelx2y2,  g + 1, 0, 1, 1  ) 
+        self.layout.addWidget(self.xDblSpin2,      g + 1, 1, 1, 1  )
+        self.layout.addWidget(self.yDblSpin2,      g + 1, 2, 1, 1  )
+        self.layout.addWidget(self.viewLabelVR,    g + 2, 0, 1, 1  ) 
+        self.layout.addWidget(self.getViewPB,      g + 2, 1, 1, col)
+        self.layout.addWidget(self.setViewPB,      g + 3, 1, 1, col)
+        self.layout.addWidget(self.setFitPB,       g + 4, 1, 1, col)
+        g = g + 5
+
+        
+        self.layout.setRowStretch(g, 1)
+        g = g + 1
+        
+        self.layout.addWidget(HLine(self),         g + 0, 0, 1, col + 1)
+        g = g + 1
+        
+        self.layout.addWidget(self.pathLabel,      g + 0, 0, 1, 1  )
+        self.layout.addWidget(self.pathEdit,       g + 0, 1, 1, col)
+        g = g + 2
+        
+        self.layout.addWidget(self.getScreenPB,    g + 0, 1, 1, col)
+        self.layout.addWidget(self.saveScreenPB,   g + 1, 1, 1, col)
+        self.layout.addWidget(self.cancelPB,       g + 2, 1, 1, col)
+        self.layout.setRowStretch(7, 1)
+        self.layout.setColumnStretch(1, 1)
+        self.layout.setColumnStretch(2, 1)
+        self.setLayout(self.layout)
+        self.setWindowTitle("Screenshot Control")
+    
+    def setPanelValue(self ):
+        self.imgWidthSpin.setValue(400)
+        self.imgHeightSpin.setValue(400)
+        self.lyWidthSpin.setValue(180)
+        self.showLypnCB.setCheckState(pya.Qt.Checked)
+        self.showLndtCB.setCheckState(pya.Qt.Checked)
+        self.showLnameCB.setCheckState(pya.Qt.Checked)
+        self.showLsourceCB.setCheckState(pya.Qt.Checked)
+        self.showLvisibleCB.setCheckState(pya.Qt.Checked)
+        
+    def initSignal(self):
+        self.showLypnCB.stateChanged.connect(lambda n : self.enableLyChecks(n))
+        
+
+    def enableLyChecks(self, n):
+        for option in [self.showLndtCB, self.showLnameCB, self.showLsourceCB, self.showLvisibleCB]:
+            option.setEnabled(n == pya.Qt.Checked)
+        
+    def closeEvent(self, event):
+        if self.waitClose:
+            event.accept()
+        else:
+            self.parent.close()
+
+class ScreenShotControlWidget(pya.QWidget):
+    def __init__(self, parent = None):
+        super(ScreenShotControlWidget, self).__init__()    
+        self.initUI()
+        self.initSignal()
+        
+    def initUI(self):
+        self.lssWidget = LayerScreenShotWidget()
+        self.control   = ControlWidget(self)
+        self.layout    = pya.QHBoxLayout()
+        self.layout.addWidget(self.lssWidget)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setWindowTitle("Screenshot View")
+        self.setLayout(self.layout)
+        self.initTheme()
+
+    def initSignal(self):
+        self.timer = pya.QTimer()
+        self.timer.setInterval(200)
+        self.timer.timeout.connect(lambda : self.updateSize())
+        self.control.showLypnCB.stateChanged.connect(lambda chk: self.lssWidget.layerList.setVisible(chk == pya.Qt.Checked))
+        self.control.lyWidthSpin.valueChanged.connect(lambda w:  self.lssWidget.layerList.setFixedWidth(w))
+        self.control.getScreenPB.clicked(lambda : self.getScreen())
+        self.control.getViewPB.clicked(lambda : self.getView())
+        self.control.setViewPB.clicked(lambda : self.setView())
+        self.control.setFitPB.clicked(lambda : self.setFit())
+        self.control.saveScreenPB.clicked(lambda : self.lssWidget.saveScreen(self.control.pathEdit.text))
+        self.control.cancelPB.clicked(lambda : self.close())
+        self.control.onTopCB.stateChanged.connect(lambda chk: self.setOnTop(chk == pya.Qt.Checked))
+        self.getScreen()
+
+    def initTheme(self):
+        bgc        = view().get_config("background-color") if view() else "#FFFFFF"
+        bgc        = "#FFFFFF" if bgc == "auto" else bgc
+        dark_bg    = (int(bgc[1:3], 16) + int(bgc[3:5], 16) + int(bgc[5:7], 16)) &lt;= (255)
+        txtc       = "#FFFFFF" if dark_bg else "#000000"
+        styleSheet = f"""
+            QWidget{{    background-color : {bgc};}}
+            QListWidget{{background-color : {bgc}; border-style : solid; border : None;}}
+            QLabel{{color: {txtc};}}
+        """
+        self.lssWidget.setStyleSheet(styleSheet)
+        
+    def setOnTop(self, top):
+
+        if top:
+            self.setWindowFlags(self.windowFlags | pya.Qt.WindowStaysOnTopHint)
+            #self.control.setWindowFlags(self.control.windowFlags | pya.Qt.WindowStaysOnTopHint)
+
+        else:
+            self.setWindowFlags(self.windowFlags &amp; ~ pya.Qt.WindowStaysOnTopHint)
+            #self.control.setWindowFlags(self.control.windowFlags &amp; ~ pya.Qt.WindowStaysOnTopHint)    
+            
+    def setView(self):
+        zoombox = pya.DBox(self.control.xDblSpin1.value, self.control.yDblSpin1.value, self.control.xDblSpin2.value, self.control.yDblSpin2.value)
+        view().zoom_box(zoombox)
+        
+    def getView(self):
+        if view():
+            b = view().box()
+            self.control.xDblSpin1.value = b.p1.x
+            self.control.yDblSpin1.value = b.p1.y
+            self.control.xDblSpin2.value = b.p2.x
+            self.control.yDblSpin2.value = b.p2.y
+    
+      
+    def setFit(self):
+        view().zoom_fit()
+        
+    def updateSize(self):
+        self.resize(self.minimumSizeHint())
+        self.adjustSize() 
+        pya.QApplication.processEvents()
+        
+    def getScreen(self):
+        if view():
+            outPath = self.control.pathEdit.text
+            if outPath == "":
+                filePath   = pya.CellView().active().filename()
+                appPath    = pya.Application.instance().klayout_path()[-2]
+                folderPath = os.path.dirname(filePath) if filePath else appPath
+                outPath    = os.path.join(folderPath, "out.png")
+                self.control.pathEdit.setText(outPath)
+                
+            w         = self.control.imgWidthSpin.value
+            h         = self.control.imgHeightSpin.value
+            lypn      = self.control.showLndtCB.isChecked()
+            lndt      = self.control.showLndtCB.isChecked()
+            lname     = self.control.showLnameCB.isChecked()
+            lsource   = self.control.showLsourceCB.isChecked()
+            lvis      = self.control.showLvisibleCB.isChecked()
+            gridHide  = self.control.gridHide.isChecked()
+            scaleHide = self.control.scaleHide.isChecked()
+
+            view().set_config("grid-visible",    "false" if gridHide  else "true")
+            view().set_config("grid-show-ruler", "false" if scaleHide else "true")
+            self.lssWidget.getScreen(w, h, lndt, lname, lsource, lvis)
+            self.timer.start()
+            view().clear_config()
+
+
+                     
+    def closeEvent(self, event):
+        self.control.waitClose = True
+        self.control.close()
+        event.accept()
+
+
+main = ScreenShotControlWidget()
+ctrl = main.control
+
+wmain, hmain = 500, 500
+wctrl, hctrl = 300, 500
+xmain, ymain = 300, 300
+xctrl        = xmain + wmain + wctrl /2
+yctrl        = ymain
+main.setGeometry(xmain, ymain, wmain, hmain)
+ctrl.setGeometry(xctrl, yctrl, wctrl, hctrl)
+main.show()
+ctrl.show()</text>
+</klayout-macro>
