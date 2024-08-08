@@ -73,8 +73,6 @@ class ControlWidget(pya.QWidget):
                 cb.setCheckState(pya.Qt.Checked)
         
     def initSignal(self):
-        
-        
         dispCfg = self.dispW.dispCfg
         imgCfg  = self.dispW.imgCfg
         viewCfg = self.viewW.viewCfg
@@ -89,6 +87,7 @@ class ControlWidget(pya.QWidget):
         viewBMK.itemDoubleClicked.connect(       lambda i : self.gotoBMK(i))
         self.getW.getPB.clicked.connect(         lambda   : self.getScreen())
         self.getW.copyPB.clicked.connect(        lambda   : self.disp.copyScreen())
+        self.saveW.savePB.clicked.connect(       lambda   : self.saveW.save(self.disp.renderImage(), "png")) 
         
         for cb in [dispCfg.showLnumCB, dispCfg.showLnameCB, dispCfg.showLsourCB, dispCfg.showLvisCB]:
             cb.stateChanged.connect( lambda  : self.getLayerLabels())

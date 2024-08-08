@@ -16,7 +16,46 @@ class BMKListWidget(pya.QListWidget):
         print (e.key())
         if e.key() == pya.Qt.Key_Delete:
             print("OK")
-        
+
+    def dragMoveEvent(self, event):
+        if event.keyboardModifiers():
+            event.ignore()
+        else:
+            super().dragMoveEvent(event)
+            self.updateBMKOrder()
+
+    def dropEvent(self, event):
+        if event.keyboardModifiers():
+            event.ignore()
+        else:
+            super().dropEvent(event)
+            self.updateBMKOrder()
+
+    def deleteupdateBMKOrder(self, cardWidget):
+        for row in range(self.count()):
+            if self.itemWidget( self.item (row)) == cardWidget:
+                self.takeItem (row)
+        self.updateCardOrder()
+
+
+    def bmkWidgets(self):
+        return [self.itemWidget( self.item (row))for row in range(self.count())]
+
+    def updateBMKOrder(self):
+        for index, widget in enumerate(self.cardWidgets()):
+            widget.setSequnce(index+1)
+
+    def save(self, path=""):
+        with open(r'.\export.rcp', 'wb') as f:
+            for index, widget in enumerate(self.cardWidgets()):
+                pickle.dump(widget, f)
+
+    def load(self, path=""):
+        self.clear()
+        with open(r'.\export.rcp', 'rb') as f:
+            widget = pickle.load(f)
+            self.addCard(widget)
+
 if __name__ == "__main__" :
     w = BMKListWidget()
     w.addBookmark("bookmark 1",    0,    0, 500, 500)

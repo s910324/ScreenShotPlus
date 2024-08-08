@@ -6,6 +6,7 @@ class SaveFileWidget(pya.QWidget):
     def __init__(self, parent = None):
         super(SaveFileWidget, self).__init__()
         self.saveFullPath = None
+        self.dataWaitSave = None
         self.initUI()
         self.initSignal()
         
@@ -42,7 +43,7 @@ class SaveFileWidget(pya.QWidget):
         if path:
             self.folderPathEdit.setText(path)
 
-    def save(self, data = "TEST", suffix = "txt", override = False):
+    def save(self, data = None, suffix = "txt", override = False):
         invalid    = ['<', '\\', '|', '/', '>', ':', '*', '?', '"']
         folderPath = self.folderPathEdit.text
         fileName   = self.fileNameEdit.text
@@ -70,6 +71,10 @@ class SaveFileWidget(pya.QWidget):
             
         self.saveFullPath = os.path.join(folderPath, f"{fileName}{modifier}.{suffix}")
 
+        if data is None:
+            pya.QToolTip.showText(pya.QCursor.pos, "No Data Avaliable")
+            return
+        
         if isinstance(data, pya.QPixmap): 
             data.save(self.saveFullPath)
         else:
