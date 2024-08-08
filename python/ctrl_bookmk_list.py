@@ -3,7 +3,7 @@ from ctrl_bookmk_item import BMKItem
 
 class BMKListWidget(pya.QListWidget):
     def __init__(self, parent = None):
-        super(BMKListWidget, self).__init__()
+        super().__init__()
 
     def addBookmark(self, name, x1, y1, x2, y2):
         lwidget = BMKItem(self.count + 1, name, x1, y1, x2, y2, self)

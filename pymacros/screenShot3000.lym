@@ -29,6 +29,7 @@ for importPath in [libPath, iconPath]:
     if not importPath in sys.path : sys.path.insert(0, importPath)
     
 import ctrl_misc 
+import ctrl_bookmk_manager
 import ctrl_bookmk_item
 import ctrl_bookmk_list
 import ctrl_display_config
@@ -47,13 +48,14 @@ import ctrl_main
 def rld():
     from   importlib import reload  
     reload(ctrl_misc)
+    reload(ctrl_bookmk_manager)
     reload(ctrl_bookmk_item)
     reload(ctrl_bookmk_list)
     reload(ctrl_display_config)
     reload(ctrl_img_config)
     reload(ctrl_get_screen)
     reload(ctrl_save_file)
-    reload(ctrl_save_file)
+    reload(ctrl_set_view)
     reload(ctrl_tab_bookmk)
     reload(ctrl_tab_disp)
     reload(lysc_layer_img_label)

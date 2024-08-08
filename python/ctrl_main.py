@@ -84,7 +84,7 @@ class ControlWidget(pya.QWidget):
         viewCfg.bkViewPB.clicked.connect(        lambda   : self.bkView())
         dispCfg.showLypnCB.stateChanged.connect( lambda n : self.enableLyChecks(n))
         imgCfg.lyWSpn.valueChanged.connect(      lambda w : self.disp.setLableListDimension(w))
-        viewBMK.itemDoubleClicked.connect(       lambda i : self.gotoBMK(i))
+        #viewBMK.itemDoubleClicked.connect(       lambda i : self.gotoBMK(i))
         self.getW.getPB.clicked.connect(         lambda   : self.getScreen())
         self.getW.copyPB.clicked.connect(        lambda   : self.disp.copyScreen())
         self.saveW.savePB.clicked.connect(       lambda   : self.saveW.save(self.disp.renderImage(), "png")) 
