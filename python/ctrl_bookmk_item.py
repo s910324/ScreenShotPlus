@@ -4,6 +4,7 @@ class BMKItem(pya.QWidget):
     def __init__(self, index, name, x1, y1, x2, y2, parent = None):
         super(BMKItem, self).__init__(parent)  
         self.initUI()
+        self.initSignal()
         self.setValue(index, name, x1, y1, x2, y2)
         
     def initUI(self):
@@ -28,24 +29,31 @@ class BMKItem(pya.QWidget):
         self.layout.setContentsMargins(5,10,5,10)
         self.setLayout(self.layout)
         
+    def initSignal(self):
+        self.nameLE.textChanged.connect(lambda n : self.setName(n))
+        
+    def setValue(self, index, name, x1, y1, x2, y2):
+        self.setIndex(index)
+        self.setName(name)
+        self.setRect(x1, y1, x2, y2)
     
-    def setValue(self, index, name, x1, y1, x2, y2, value = 0):
-        self.index = index
+    def setName(self, name):
         self.name  = name
-        self.x1    = x1
-        self.y1    = y1
-        self.x2    = x2
-        self.y2    = y2
-        self.idLB.setText(f"#{index}")
         self.nameLE.setText(name)
-        self.rectLB.setText(f"({x1:.3f}, {y1:.3f})\n({x2:.3f},{y2:.3f})")
-    
+        
     def setIndex(self, index):
-        self.idLB.setText("#{value}")
+        self.index = index
+        self.idLB.setText(f"#{index}")
 
+    def setRect(self, x1, y1, x2, y2):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+        self.rectLB.setText(f"({x1:.3f}, {y1:.3f})\n({x2:.3f},{y2:.3f})")
+        
     def value(self):
         return {
-            #"index": self.index,
             "name" : self.name,
             "x1"   : self.x1,
             "y1"   : self.y1,
