@@ -23,10 +23,15 @@ class LayerImgLabel(pya.QWidget):
         self.setLayout(self.layout)
     
     def setLabelDisplayLen(self, l):
-        self.layerLabel.setFixedWidth(l)
+        self.layerLabel.setMinimumWidth(l)
      
     def setDisplay(self, label_png, label_string):
+        
         self.layerLabel.setText(label_string + " ")
-        self.layerPixmap.loadFromData(label_png)
-        self.layerImage.setPixmap(self.layerPixmap)
-       
+        if label_png:
+            self.layerPixmap.loadFromData(label_png)
+            self.layerImage.setPixmap(self.layerPixmap)
+        
+if __name__ == "__main__" :
+    w = LayerImgLabel("", "Test string")
+    w.show()

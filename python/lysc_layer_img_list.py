@@ -12,6 +12,10 @@ class LayerImgList(pya.QListWidget):
         self.setVerticalScrollBarPolicy(pya.Qt.ScrollBarAlwaysOff)
         self.setUniformItemSizes(True)
         
+        self.setFrameShape(pya.QFrame.Panel)
+        self.setFrameShadow(pya.QFrame.Plain)
+        self.setLineWidth(0)
+        
     def setHorizontal(self):
         self.setResizeMode(pya.QListView.Adjust)
         self.setViewMode(pya.QListView.IconMode)
@@ -26,6 +30,7 @@ class LayerImgList(pya.QListWidget):
         lwidget = LayerImgLabel(label_png, label_text, self)
         lItem   = pya.QListWidgetItem(self)
         lItem.setSizeHint(lwidget.sizeHint())
+        lItem.setFlags(pya.Qt.NoItemFlags)
         self.addItem(lItem)
         self.setItemWidget(lItem, lwidget)
         return lwidget, lItem
@@ -47,8 +52,10 @@ class LayerImgList(pya.QListWidget):
     def setTheme(self, bgc, txtc):
         self.txtc = txtc
         self.bgc  = bgc
-
-    def getLayerIcon(self, showLayerNo = True, showName = True, showSourceView = True, showOnlyVisible = True):
+            
+    def getLayerIcon(self, 
+            showLayerNo = True, showName   = True, showSourceView = True, 
+            hideHiddenL = True, hideEmptyL = True, hideNIVL       = True, ):
         cv = pya.Application.instance().main_window().current_view()
         if not(cv): return
 
@@ -58,7 +65,7 @@ class LayerImgList(pya.QListWidget):
         while not(layer_iter.at_end()):  
 
             layerProp = layer_iter.current()  
-            if [showOnlyVisible, layerProp.visible] in [[True, True], [False, True], [False, False]] : 
+            if [hideHiddenL, layerProp.visible] in [[True, True], [False, True], [False, False]] : 
                 labelData.append(self.getLabelData(cv, layer_iter, showLayerNo, showName, showSourceView))
             layer_iter.next()
         
@@ -66,12 +73,12 @@ class LayerImgList(pya.QListWidget):
 
         for ld in labelData:
             lwidget, lItem = self.addLayerItem(ld["img"], ld["txt"])
-            lwidget.setLabelDisplayLen(5 + labelDispLen * 6 )
+            lwidget.setLabelDisplayLen(15 + labelDispLen * 6 )
             lItem.setSizeHint(lwidget.sizeHint())
             lwidget.update()
             
 if __name__ == "__main__" :
     w = LayerImgList()
-    w.getLayerIcon()
-    w.resize(600, 50)
+    w.getLayerIcon(showName   = False)
+    w.resize(300, 150)
     w.show()

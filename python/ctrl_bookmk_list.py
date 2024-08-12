@@ -4,7 +4,7 @@ from ctrl_bookmk_item import BMKItem
 
 class BMKListWidget(pya.QListWidget):
     def __init__(self, parent = None):
-        super(BMKListWidget, self).__init__()
+        super().__init__()
         self.initUI()
         
     def initUI(self):

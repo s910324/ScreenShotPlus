@@ -17,7 +17,6 @@ class ControlWidget(pya.QWidget):
         self.waitUpdate = False
         self.installEventFilter(self)
         self.initUI()
-        self.initTheme()
         self.initSignal()
         self.initVal()
         self.getScreen()
@@ -46,18 +45,6 @@ class ControlWidget(pya.QWidget):
         self.disp.waitClose = False
         self.setWindowTitle("Screenshot Control")
 
-    def initTheme(self):
-        if self.check_cv():
-            bgc        = self.cv.get_config("background-color") if self.cv else "#FFFFFF"
-            bgc        = "#FFFFFF" if bgc == "auto" else bgc
-            dark_bg    = (int(bgc[1:3], 16) + int(bgc[3:5], 16) + int(bgc[5:7], 16)) <= (255)
-            txtc       = "#FFFFFF" if dark_bg else "#000000"
-            styleSheet = f"""
-                QWidget{{    background-color : {bgc};}}
-                QListWidget{{background-color : {bgc}; border-style : solid; border : None;}}
-                QLabel{{color: {txtc};}}
-            """
-            self.disp.setStyleSheet(styleSheet)
         
     def initVal(self):
         loaded = self.loadSettings()    
@@ -69,7 +56,9 @@ class ControlWidget(pya.QWidget):
             imgCfg.imgHSpn.setValue(400)
             imgCfg.lyWSpn.setValue(180)
             self.disp.layerList.setFixedWidth(180)
-            for cb in [dispCfg.showLypnCB, dispCfg.showLnumCB, dispCfg.showLnameCB, dispCfg.showLsourCB, dispCfg.showLvisCB]:
+            
+            for cb in [dispCfg.showLnumCB, dispCfg.showLnameCB, dispCfg.showLsourCB, 
+                dispCfg.hideHiddenCB, dispCfg.hideEmptyCB, dispCfg.hideNIVCB]:
                 cb.setCheckState(pya.Qt.Checked)
         
     def initSignal(self):
@@ -82,53 +71,46 @@ class ControlWidget(pya.QWidget):
         viewCfg.setFitPB.clicked.connect(        lambda   : self.zoomFit())
         viewCfg.setViewPB.clicked.connect(       lambda   : self.setView())
         viewCfg.bkViewPB.clicked.connect(        lambda   : self.bkView())
-        dispCfg.showLypnCB.stateChanged.connect( lambda n : self.enableLyChecks(n))
         imgCfg.lyWSpn.valueChanged.connect(      lambda w : self.disp.setLableListDimension(w))
         #viewBMK.itemDoubleClicked.connect(       lambda i : self.gotoBMK(i))
         self.getW.getPB.clicked.connect(         lambda   : self.getScreen())
         self.getW.copyPB.clicked.connect(        lambda   : self.disp.copyScreen())
         self.saveW.savePB.clicked.connect(       lambda   : self.saveW.save(self.disp.renderImage(), "png")) 
         
-        for cb in [dispCfg.showLnumCB, dispCfg.showLnameCB, dispCfg.showLsourCB, dispCfg.showLvisCB]:
+        for cb in [dispCfg.showLnumCB, dispCfg.showLnameCB, dispCfg.showLsourCB, 
+            dispCfg.hideHiddenCB, dispCfg.hideEmptyCB, dispCfg.hideNIVCB]:
             cb.stateChanged.connect( lambda  : self.getLayerLabels())
             
-        dispCfg.dirCB.currentIndexChanged.connect(  lambda i : self.disp.setDirection(dispCfg.dirCB.itemData(i)))
-        dispCfg.gridCB.currentIndexChanged.connect( lambda i : self.getScreen())
-        dispCfg.scaleCB.currentIndexChanged.connect(lambda i : self.getScreen())
-        dispCfg.axisCB.currentIndexChanged.connect( lambda i : self.getScreen())
+        dispCfg.lyAdjCB.currentIndexChanged.connect( lambda i : self.setDirection(dispCfg.lyAdjCB.itemData(i)))
+        dispCfg.gridCB.currentIndexChanged.connect(  lambda i : self.getScreen())
+        dispCfg.scaleCB.currentIndexChanged.connect( lambda i : self.getScreen())
+        dispCfg.axisCB.currentIndexChanged.connect(  lambda i : self.getScreen())
         
     def getScreen(self):
-        if not(self.check_cv()) : return
-        
         dispCfg  = self.dispW.dispCfg
         imgCfg   = self.dispW.imgCfg
-        
-        settings = {
-            "grid-visible"    : "true",
-            "grid-show-ruler" : dispCfg.scaleCB.itemData (dispCfg.scaleCB.currentIndex), # ruler
-            "grid-style0"     : dispCfg.axisCB.itemData  (dispCfg.axisCB.currentIndex ), # axis
-            "grid-style1"     : dispCfg.gridCB.itemData  (dispCfg.gridCB.currentIndex ), # near style
-            "grid-style2"     : dispCfg.gridCB.itemData  (dispCfg.gridCB.currentIndex ), # far  style
-        }
-        
-        for s in settings:
-            self.cv.set_config(s, settings[s])
-
         self.disp.getScreen(
             w = imgCfg.imgWSpn.value, 
-            h = imgCfg.imgHSpn.value, 
+            h = imgCfg.imgHSpn.value,
+            oversampling = imgCfg.imgWSpn.value, 
+            showRuler = dispCfg.scaleCB.itemData (dispCfg.scaleCB.currentIndex), 
+            gridStyle = dispCfg.gridCB.itemData  (dispCfg.gridCB.currentIndex ), 
+            axisStyle = dispCfg.axisCB.itemData  (dispCfg.axisCB.currentIndex ), 
+            showText  = "true" if (dispCfg.hideTxtCB.checkState == pya.Qt.Checked) else "false",
         )
-        
+
         self.getLayerLabels()
-        self.cv.clear_config()
         
     def getLayerLabels(self):
         dispCfg  = self.dispW.dispCfg
         self.disp.getLayerLabels(            
-            showLayerNo     = dispCfg.showLnumCB.checkState  == pya.Qt.Checked, 
-            showName        = dispCfg.showLnameCB.checkState == pya.Qt.Checked, 
-            showSourceView  = dispCfg.showLsourCB.checkState == pya.Qt.Checked, 
-            showOnlyVisible = dispCfg.showLvisCB.checkState  == pya.Qt.Checked
+            showLayerNo     = dispCfg.showLnumCB.checkState   == pya.Qt.Checked,
+            showName        = dispCfg.showLnameCB.checkState  == pya.Qt.Checked, 
+            showSourceView  = dispCfg.showLsourCB.checkState  == pya.Qt.Checked, 
+        
+            hideHiddenL     = dispCfg.hideHiddenCB.checkState == pya.Qt.Checked, 
+            hideEmptyL      = dispCfg.hideEmptyCB.checkState  == pya.Qt.Checked, 
+            hideNIVL        = dispCfg.hideNIVCB.checkState    == pya.Qt.Checked,
         )
         
     def getViewBox(self):
@@ -192,39 +174,48 @@ class ControlWidget(pya.QWidget):
         self.cv.zoom_box(b)
         self.getScreen()
         
-    def enableLyChecks(self, n):
+    def setDirection(self, d):
         dispCfg = self.dispW.dispCfg
-        enable  = (n in [ pya.Qt.Checked, True])
-        for cb in [dispCfg.showLnumCB, dispCfg.showLnameCB, dispCfg.showLsourCB, dispCfg.showLvisCB]:
+        enable  = not(d == "H")
+        
+        for cb in [dispCfg.showLnumCB, dispCfg.showLnameCB, dispCfg.showLsourCB, 
+                dispCfg.hideHiddenCB, dispCfg.hideEmptyCB, dispCfg.hideNIVCB]:
             cb.setEnabled(enable)
-        self.disp.layerList.setVisible(enable)
-    
+        self.disp.setDirection(d)
+
     def saveSettings(self):
         dispCfg  = self.dispW.dispCfg
         imgCfg   = self.dispW.imgCfg
         viewBMK  = self.viewW.viewBMK
-        settings = {
-            "imgWSpn"     : imgCfg.imgWSpn.value,
-            "imgHSpn"     : imgCfg.imgHSpn.value,
-            "lyWSpn"      : imgCfg.lyWSpn.value,
-            "ovspSpn"     : imgCfg.ovspSpn.value,
-            
-            "showLypnCB"  : dispCfg.showLypnCB.checkState  == pya.Qt.Checked, 
-            "showLnumCB"  : dispCfg.showLnumCB.checkState  == pya.Qt.Checked, 
-            "showLnameCB" : dispCfg.showLnameCB.checkState == pya.Qt.Checked, 
-            "showLsourCB" : dispCfg.showLsourCB.checkState == pya.Qt.Checked, 
-            "showLvisCB"  : dispCfg.showLvisCB.checkState  == pya.Qt.Checked, 
-            "dirCB"       : dispCfg.dirCB.currentIndex,
-            "gridCB"      : dispCfg.gridCB.currentIndex,
-            "scaleCB"     : dispCfg.scaleCB.currentIndex,
-            "axisCB"      : dispCfg.axisCB.currentIndex,
-            "bookmarks"   : [viewBMK.itemWidget(viewBMK.item (row)).value() for row in range(viewBMK.count)],
-        }
-        dirPath  = os.path.dirname(__file__) 
-        filepath = os.path.realpath(os.path.join(dirPath, "setting.pkl"))
-       
-        with open(filepath, 'wb') as f:
-            pickle.dump(settings, f)
+        try:
+            settings = {
+                "imgWSpn"     : imgCfg.imgWSpn.value,
+                "imgHSpn"     : imgCfg.imgHSpn.value,
+                "lyWSpn"      : imgCfg.lyWSpn.value,
+                "ovspSpn"     : imgCfg.ovspSpn.value,
+                
+                "showLnumCB"  : dispCfg.showLnumCB.checkState  == pya.Qt.Checked, 
+                "showLnameCB" : dispCfg.showLnameCB.checkState == pya.Qt.Checked, 
+                "showLsourCB" : dispCfg.showLsourCB.checkState == pya.Qt.Checked, 
+    
+                "hideHiddenCB": dispCfg.hideHiddenCB.checkState == pya.Qt.Checked,
+                "hideEmptyCB" : dispCfg.hideEmptyCB.checkState  == pya.Qt.Checked,
+                "hideNIVCB"   : dispCfg.hideNIVCB.checkState    == pya.Qt.Checked,
+                "hideTxtCB"   : dispCfg.hideTxtCB.checkState    == pya.Qt.Checked,
+                
+                "lyAdjCB"     : dispCfg.lyAdjCB.currentIndex,
+                "gridCB"      : dispCfg.gridCB.currentIndex,
+                "scaleCB"     : dispCfg.scaleCB.currentIndex,
+                "axisCB"      : dispCfg.axisCB.currentIndex,
+                "bookmarks"   : viewBMK.bookmarks(),
+            }
+            dirPath  = os.path.dirname(__file__) 
+            filepath = os.path.realpath(os.path.join(dirPath, "setting.pkl"))
+           
+            with open(filepath, 'wb') as f:
+                pickle.dump(settings, f)
+        except Exception as e:
+            print(f"Save setting error {e}")
 
     def loadSettings(self):
         dirPath  = os.path.dirname(__file__) 
@@ -242,20 +233,24 @@ class ControlWidget(pya.QWidget):
                 imgCfg.lyWSpn.setValue ( s["lyWSpn" ])
                 imgCfg.ovspSpn.setValue( s["ovspSpn"])
                 
-                dispCfg.showLypnCB.setCheckState ( pya.Qt.Checked if s["showLypnCB" ] else pya.Qt.Unchecked)
                 dispCfg.showLnumCB.setCheckState ( pya.Qt.Checked if s["showLnumCB" ] else pya.Qt.Unchecked)
                 dispCfg.showLnameCB.setCheckState( pya.Qt.Checked if s["showLnameCB"] else pya.Qt.Unchecked)
                 dispCfg.showLsourCB.setCheckState( pya.Qt.Checked if s["showLsourCB"] else pya.Qt.Unchecked)
-                dispCfg.showLvisCB.setCheckState ( pya.Qt.Checked if s["showLvisCB" ] else pya.Qt.Unchecked)
-                dispCfg.dirCB.setCurrentIndex  (s["dirCB" ])
+
+                dispCfg.hideHiddenCB.setCheckState ( pya.Qt.Checked if s["hideHiddenCB" ] else pya.Qt.Unchecked)
+                dispCfg.hideEmptyCB.setCheckState  ( pya.Qt.Checked if s["hideEmptyCB"  ] else pya.Qt.Unchecked)
+                dispCfg.hideNIVCB.setCheckState    ( pya.Qt.Checked if s["hideNIVCB"    ] else pya.Qt.Unchecked)
+                dispCfg.hideTxtCB.setCheckState    ( pya.Qt.Checked if s["hideTxtCB"    ] else pya.Qt.Unchecked)
+                
+                dispCfg.lyAdjCB.setCurrentIndex(s["lyAdjCB" ])
                 dispCfg.gridCB.setCurrentIndex (s["gridCB" ])
                 dispCfg.scaleCB.setCurrentIndex(s["scaleCB"])
                 dispCfg.axisCB.setCurrentIndex (s["axisCB" ])
-                self.enableLyChecks(s["showLypnCB" ])
+                
                 for bmk in s["bookmarks"]:
                     viewBMK.addBookmark(bmk["name"], bmk["x1"], bmk["y1"], bmk["x2"], bmk["y2"])
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"load setting error {e}")
         return True
         
     def closeEvent(self, event):

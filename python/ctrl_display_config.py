@@ -8,34 +8,41 @@ class DisplayConfigWidget(pya.QWidget):
         #self.initSignal()
         
     def initUI(self):
-        self.showLypnCB  = pya.QCheckBox("Show layer panel")                                   
-        self.showLnumCB  = pya.QCheckBox("Show layer number")
-        self.showLnameCB = pya.QCheckBox("Show layer name")
-        self.showLsourCB = pya.QCheckBox("Show layer source")
-        self.showLvisCB  = pya.QCheckBox("Show only visible")
-        self.dirCB       = pya.QComboBox()  
-        self.gridCB      = pya.QComboBox()                                   
-        self.scaleCB     = pya.QComboBox()
-        self.axisCB      = pya.QComboBox()
-        self.layout      = pya.QGridLayout()
+        self.lyAdjCB      = pya.QComboBox()  
+        self.gridCB       = pya.QComboBox()                                   
+        self.scaleCB      = pya.QComboBox()
+        self.axisCB       = pya.QComboBox()
         
-        self.layout.addWidget(pya.QLabel("Layer setting:"),  0, 0, 1, 1)            
-        self.layout.addWidget(pya.QLabel("Orentation:"),     5, 0, 1, 1)      
-        self.layout.addWidget(pya.QLabel("Grid:"),           6, 0, 1, 1)
-        self.layout.addWidget(pya.QLabel("Scale bar:"),      7, 0, 1, 1)
-        self.layout.addWidget(pya.QLabel("Axis :"),          8, 0, 1, 1)
+        self.showLnumCB   = pya.QCheckBox("Show layer number")
+        self.showLnameCB  = pya.QCheckBox("Show layer name")
+        self.showLsourCB  = pya.QCheckBox("Show layer source")
         
-        self.layout.addWidget(self.showLypnCB,  0, 1, 1, 1)
-        self.layout.addWidget(self.showLnumCB,  1, 1, 1, 1)
-        self.layout.addWidget(self.showLnameCB, 2, 1, 1, 1)
-        self.layout.addWidget(self.showLsourCB, 3, 1, 1, 1)
-        self.layout.addWidget(self.showLvisCB,  4, 1, 1, 1)
-        self.layout.addWidget(self.dirCB,       5, 1, 1, 1)
-        self.layout.addWidget(self.gridCB,      6, 1, 1, 1)
-        self.layout.addWidget(self.scaleCB,     7, 1, 1, 1)
-        self.layout.addWidget(self.axisCB,      8, 1, 1, 1)
+        self.hideHiddenCB = pya.QCheckBox("Hide hidden layers")
+        self.hideEmptyCB  = pya.QCheckBox("Hide empty layers")
+        self.hideNIVCB    = pya.QCheckBox("Hide layers not in view")
+        self.hideTxtCB    = pya.QCheckBox("Hide text")
+        self.layout       = pya.QGridLayout()
         
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.addWidget(pya.QLabel("Layer window:"),   0, 0, 1, 1)      
+        self.layout.addWidget(pya.QLabel("Grid style:"),     1, 0, 1, 1)
+        self.layout.addWidget(pya.QLabel("Scale bar:"),      2, 0, 1, 1)
+        self.layout.addWidget(pya.QLabel("Axis style:"),     3, 0, 1, 1)
+        self.layout.addWidget(pya.QLabel("Layer setting:"),  5, 0, 1, 1) 
+        
+        self.layout.addWidget(self.lyAdjCB,       0, 1, 1, 1)
+        self.layout.addWidget(self.gridCB,        1, 1, 1, 1)
+        self.layout.addWidget(self.scaleCB,       2, 1, 1, 1)
+        self.layout.addWidget(self.axisCB,        3, 1, 1, 1)
+        self.layout.setRowMinimumHeight(          4, 15     )
+        self.layout.addWidget(self.showLnumCB,    5, 1, 1, 1)
+        self.layout.addWidget(self.showLnameCB,   6, 1, 1, 1)
+        self.layout.addWidget(self.showLsourCB,   7, 1, 1, 1)
+        self.layout.setRowMinimumHeight(          8, 15     )
+        self.layout.addWidget(self.hideHiddenCB,  9, 1, 1, 1)
+        self.layout.addWidget(self.hideEmptyCB,  10, 1, 1, 1)
+        self.layout.addWidget(self.hideNIVCB,    11, 1, 1, 1)
+        self.layout.addWidget(self.hideTxtCB,    12, 1, 1, 1)        
+        self.layout.setContentsMargins(           0, 0, 0, 0)
         self.layout.setColumnMinimumWidth(0, 70)
         self.layout.setColumnStretch(1, 1)
         self.setLayout(self.layout)
@@ -50,25 +57,32 @@ class DisplayConfigWidget(pya.QWidget):
             "Lines"                              : "lines", 
             "Lines with ticks"                   : "tenth-marked-lines"
         }
-        scaleTheme = {
+        scaleConfg = {
             "Show" : "true",
             "Hide" : "false"
         }
         
-        dirTheme = {
+        dirConfg = {
             "Left side"   : "L",
             "Bottom side" : "B",
+            "Right side"  : "R",
+            "Top side"    : "T",
+            "Hide"        : "H",
         }
+        
+
         for t in lineTheme:
             self.gridCB.addItem(t, lineTheme[t])
             self.axisCB.addItem(t, lineTheme[t])
             
-        for t in scaleTheme:
-            self.scaleCB.addItem(t, scaleTheme[t])
+        for t in scaleConfg:
+            self.scaleCB.addItem(t, scaleConfg[t])
         
-        for t in dirTheme:
-            self.dirCB.addItem(t, dirTheme[t])
-        
+        for t in dirConfg:
+            self.lyAdjCB.addItem(t, dirConfg[t])
+            
+
+            
 if __name__ == "__main__" :
     w = DisplayConfigWidget()
     w.show()

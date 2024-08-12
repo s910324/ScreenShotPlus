@@ -5,6 +5,7 @@ class BMKItem(pya.QWidget):
         super(BMKItem, self).__init__(parent)  
         self.initUI()
         self.initSignal()
+        self.initTheme()
         self.setValue(index, name, x1, y1, x2, y2)
         
     def initUI(self):
@@ -28,6 +29,35 @@ class BMKItem(pya.QWidget):
         self.layout.setColumnMinimumWidth(1, 45)
         self.layout.setContentsMargins(5,10,5,10)
         self.setLayout(self.layout)
+        
+    def initTheme(self):
+        theme = """
+			QLineEdit {
+				color: #888888;
+				background-color: rgba(200, 200, 200, 150);
+				padding: 0.2em 0.2em 0.2em 0.2em;
+				border-style: solid;
+				border-width: 0px;
+				border-radius: 3px;
+			}
+
+			QLineEdit:disabled {
+				color: #AAAAAA;
+				background-color: rgba(200, 200, 200, 150);
+			}
+
+			QLineEdit:hover {
+				color: #333333;
+				background-color: rgba(200, 200, 200, 100);
+			}
+			 
+			QLineEdit:pressed {
+				color: #333333;
+				background-color: rgba(200, 200, 200, 50);
+		}
+        """
+        
+        self.setStyleSheet(theme)
         
     def initSignal(self):
         self.nameLE.textChanged.connect(lambda n : self.setName(n))

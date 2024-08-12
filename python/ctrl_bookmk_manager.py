@@ -55,7 +55,7 @@ class BMKManager(pya.QWidget):
 
 
     def initSignal(self):
-        self.addPB.clicked.connect(   lambda : self.addBookmark("123", 0, 0, 5, 5))
+        # self.addPB.clicked.connect(   lambda : self.addBookmark("Testing", 0, 0, 5, 5))
         self.mvUpPb.clicked.connect(  lambda : self.listW.moveBMK(-1))
         self.mvDnPb.clicked.connect(  lambda : self.listW.moveBMK( 1))
         self.mvTopPb.clicked.connect( lambda : self.listW.moveBMK(-self.listW.count))
@@ -65,16 +65,19 @@ class BMKManager(pya.QWidget):
         self.importPB.clicked.connect(lambda : self.listW.save())
         
     def addBookmark(self, name, x1, y1, x2, y2):
-        self.listW.addBookmark(name, x1, y1, x2, y2)   
+        self.listW.addBookmark(name, x1, y1, x2, y2)  
+    
+    def bookmarks(self) :
+        return [self.listW.itemWidget(self.listW.item (row)).value() for row in range(self.listW.count)]
                
 if __name__ == "__main__" :
     w = BMKManager()
     w.addBookmark("bookmark 1",    0,    0, 500, 500)
     w.addBookmark("bookmark 2", -500, -500,   0,   0)
     w.addBookmark("bookmark 3", -500, -500, 500, 500)
-    w.addBookmark("bookmark 1",    0,    0, 500, 500)
-    w.addBookmark("bookmark 2", -500, -500,   0,   0)
-    w.addBookmark("bookmark 3", -500, -500, 500, 500)
-    w.addBookmark("bookmark 4", -500, -500, 500, 500)
-    w.addBookmark("bookmark 5", -500, -500, 500, 500)
+    w.addBookmark("bookmark 4",    0,    0, 500, 500)
+    w.addBookmark("bookmark 5", -500, -500,   0,   0)
+    w.addBookmark("bookmark 6", -500, -500, 500, 500)
+    w.addBookmark("bookmark 7", -500, -500, 500, 500)
+    w.addBookmark("bookmark 8", -500, -500, 500, 500)
     w.show()

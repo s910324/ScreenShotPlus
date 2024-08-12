@@ -4,12 +4,8 @@ import pya
 
 class HLine(pya.QFrame):
     def __init__(self, parent = None):
-        #super(HLine, self).__init__(parent)
         self.setFrameShape(pya.QFrame.HLine)
         self.setFrameShadow(pya.QFrame.Sunken)
-        
-
-
 
 class RPushButton(pya.QPushButton):
 	def __init__(self, *args, **argv):
@@ -70,7 +66,7 @@ if __name__ == '__main__':
     l = pya.QVBoxLayout(a)
 
     
-    pb = PushButton(
+    pb = pya.QPushButton(
         text = "  minimize", 
         icon = svgIcon("trash-can-solid"),    
         parent = a,
