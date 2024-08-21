@@ -66,5 +66,19 @@ def rld():
 
     
 rld()
-</text>
+
+def callScreenShotPlusWidget():
+    widget        = ctrl_main.ControlWidget()
+    widget.show()
+              
+def bindMenu_ScreenShotPlus():
+    menu            = pya.MainWindow.instance().menu()
+    action          = pya.Action()
+    action.title    = "ScreenShot++"
+    action.tool_tip = "ScreenShot++"
+    action.icon     = iconPath + "\icon.png"
+    action.on_triggered(lambda : callScreenShotPlusWidget())
+    menu.insert_item("@toolbar.end", "ScreenShot++", action) 
+     
+bindMenu_ScreenShotPlus()</text>
 </klayout-macro>
