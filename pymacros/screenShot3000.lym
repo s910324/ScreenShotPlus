@@ -68,9 +68,20 @@ def rld():
 rld()
 
 def callScreenShotPlusWidget():
-    widget        = ctrl_main.ControlWidget()
-    widget.show()
-              
+    wmain, hmain = 500, 500
+    wctrl, hctrl = 300, 500
+    xmain, ymain = 300, 300
+    xctrl        = xmain + wmain + wctrl /2
+    yctrl        = ymain
+
+
+    ctrl = ctrl_main.ControlWidget()
+    disp = ctrl.disp
+    disp.setGeometry(xmain, ymain, wmain, hmain)
+    ctrl.setGeometry(xctrl, yctrl, wctrl, hctrl)
+    disp.show()
+    ctrl.show()
+    
 def bindMenu_ScreenShotPlus():
     menu            = pya.MainWindow.instance().menu()
     action          = pya.Action()

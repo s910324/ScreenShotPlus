@@ -1,3 +1,4 @@
+import os
 import pya
 import pickle
 
@@ -12,6 +13,7 @@ from ctrl_get_screen          import GetScreenWidget
 class ControlWidget(pya.QWidget):
     def __init__(self, parent = None):
         super(ControlWidget, self).__init__()
+        
         self.mw         = pya.Application.instance().main_window()
         self.cv         = self.mw.current_view()
         self.waitUpdate = False
@@ -20,6 +22,7 @@ class ControlWidget(pya.QWidget):
         self.initSignal()
         self.initVal()
         self.getScreen()
+
 
     def check_cv(self):
         self.cv = self.mw.current_view()
@@ -292,7 +295,9 @@ class ControlWidget(pya.QWidget):
         
         event.accept()
     '''
-if __name__ == "__main__" :
+
+
+if __name__ == '__main__':
     wmain, hmain = 500, 500
     wctrl, hctrl = 300, 500
     xmain, ymain = 300, 300
@@ -306,4 +311,3 @@ if __name__ == "__main__" :
     ctrl.setGeometry(xctrl, yctrl, wctrl, hctrl)
     disp.show()
     ctrl.show()
-    
